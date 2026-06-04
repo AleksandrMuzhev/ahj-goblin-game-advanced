@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/AleksandrMuzhev/ahj-goblin-game/actions/workflows/web.yml/badge.svg)](https://github.com/AleksandrMuzhev/ahj-goblin-game-advanced/actions/workflows/web.yml)
+[![Build Status](https://github.com/AleksandrMuzhev/ahj-goblin-game-advanced/actions/workflows/web.yml/badge.svg)](https://github.com/AleksandrMuzhev/ahj-goblin-game-advanced/actions/workflows/web.yml)
 
 # Goblin Game
 
