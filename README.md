@@ -14,4 +14,4 @@
 
 ## Ссылки
 
-- [GitHub Pages](https://AleksandrMuzhev.github.io/ahj-goblin-game/)
+- [GitHub Pages](https://AleksandrMuzhev.github.io/ahj-goblin-game-advanced/)
