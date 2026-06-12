@@ -2,14 +2,19 @@ const Board = require('./Board');
 const Goblin = require('./Goblin');
 const Score = require('./Score');
 
+const BOARD_SIZE = 4;
+const GOBLIN_VISIBLE_TIME = 1000;
+const GOBLIN_APPEAR_DELAY = 1000;
+const MAX_MISSES = 5;
+
 class Game {
     constructor() {
-        this.board = new Board(4);
+        this.board = new Board(BOARD_SIZE);
         this.goblin = new Goblin();
-        this.score = new Score();
-        this.intervalId = null;
+        this.score = new Score(MAX_MISSES);
+        this.timeoutId = null;
         this.isRunning = false;
-        this.moveInterval = 1000;
+        this.isGoblinVisible = false;
         this.statusElement = null;
     }
 
@@ -26,21 +31,20 @@ class Game {
         if (this.isRunning) return;
         this.isRunning = true;
         this.clearGameStatus();
-        this.scheduleNextMove();
+        this.scheduleGoblinAppearance();
     }
 
-    scheduleNextMove() {
-        if (this.intervalId) clearTimeout(this.intervalId);
+    scheduleGoblinAppearance() {
+        if (!this.isRunning || this.score.isGameOver()) return;
 
-        this.intervalId = setTimeout(() => {
+        this.timeoutId = setTimeout(() => {
             if (this.isRunning && !this.score.isGameOver()) {
-                this.moveGoblin();
-                this.scheduleNextMove();
+                this.showGoblin();
             }
-        }, this.moveInterval);
+        }, GOBLIN_APPEAR_DELAY);
     }
 
-    moveGoblin() {
+    showGoblin() {
         if (this.score.isGameOver()) {
             this.endGame();
             return;
@@ -48,37 +52,65 @@ class Game {
 
         const newPosition = this.board.getRandomPosition();
         this.board.placeGoblin(newPosition);
+        this.isGoblinVisible = true;
 
-        // Если гоблин был перемещён без клика - это промах
-        if (this.board.currentPosition !== null) {
-            // Промах будет засчитан только если гоблин исчезнет сам
-        }
+        // Гоблин исчезнет через GOBLIN_VISIBLE_TIME (без засчета промаха)
+        this.timeoutId = setTimeout(() => {
+            if (this.isGoblinVisible && this.isRunning && !this.score.isGameOver()) {
+                this.board.removeGoblin();
+                this.isGoblinVisible = false;
+                this.scheduleGoblinAppearance();
+            }
+        }, GOBLIN_VISIBLE_TIME);
     }
 
     onCellClick(position) {
         if (!this.isRunning || this.score.isGameOver()) return;
 
+        if (!this.isGoblinVisible) return;
+
+        if (this.timeoutId) {
+            clearTimeout(this.timeoutId);
+        }
+
         if (position === this.board.currentPosition) {
             this.score.incrementScore();
             this.board.removeGoblin();
-
-            // Сразу перемещаем гоблина в новое место при попадании
-            const newPosition = this.board.getRandomPosition();
-            this.board.placeGoblin(newPosition);
-        } else {
-            this.score.incrementMiss();
+            this.isGoblinVisible = false;
+            this.updateScore();
 
             if (this.score.isGameOver()) {
                 this.endGame();
+            } else {
+                this.showGoblin();
             }
+        } else {
+            this.score.incrementMiss();
+            this.board.removeGoblin();
+            this.isGoblinVisible = false;
+            this.updateScore();
+
+            if (this.score.isGameOver()) {
+                this.endGame();
+            } else {
+                this.scheduleGoblinAppearance();
+            }
+        }
+    }
+
+    updateScore() {
+        this.score.updateDisplay();
+
+        if (this.score.isGameOver()) {
+            this.endGame();
         }
     }
 
     endGame() {
         this.isRunning = false;
-        if (this.intervalId) {
-            clearTimeout(this.intervalId);
-            this.intervalId = null;
+        this.isGoblinVisible = false;
+        if (this.timeoutId) {
+            clearTimeout(this.timeoutId);
         }
         this.board.removeGoblin();
         this.showGameStatus();
@@ -87,8 +119,8 @@ class Game {
     showGameStatus() {
         if (!this.statusElement) return;
 
-        if (this.score.getMisses() >= this.score.getMaxMisses()) {
-            this.statusElement.textContent = `😢 Игра окончена! Вы поймали ${this.score.getScore()} гоблинов`;
+        if (this.score.isGameOver()) {
+            this.statusElement.textContent = `😢 Игра окончена! Вы поймали ${this.score.getScore()} гоблинов, пропустили ${this.score.getMisses()}`;
             this.statusElement.className = 'game-status game-over';
         }
     }
@@ -109,9 +141,9 @@ class Game {
 
     restart() {
         this.isRunning = false;
-        if (this.intervalId) {
-            clearTimeout(this.intervalId);
-            this.intervalId = null;
+        this.isGoblinVisible = false;
+        if (this.timeoutId) {
+            clearTimeout(this.timeoutId);
         }
         this.board.reset();
         this.score.reset();

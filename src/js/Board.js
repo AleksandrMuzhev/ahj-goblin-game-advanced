@@ -23,7 +23,7 @@ class Board {
             const cell = document.createElement('div');
             cell.classList.add('cell');
             cell.dataset.index = i;
-            this.element.appendChild(cell);
+            this.element.append(cell);
             this.cells.push(cell);
         }
     }
@@ -34,7 +34,7 @@ class Board {
         }
 
         if (this.cells[position]) {
-            this.cells[position].appendChild(this.goblin.getElement());
+            this.cells[position].append(this.goblin.getElement());
             this.currentPosition = position;
         }
     }
@@ -43,7 +43,7 @@ class Board {
         if (this.currentPosition !== null && this.cells[this.currentPosition]) {
             const cell = this.cells[this.currentPosition];
             if (cell.contains(this.goblin.getElement())) {
-                cell.removeChild(this.goblin.getElement());
+                cell.remove(this.goblin.getElement());
             }
         }
         this.currentPosition = null;
