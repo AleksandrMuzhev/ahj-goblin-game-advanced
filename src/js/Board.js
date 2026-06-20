@@ -42,18 +42,27 @@ class Board {
     removeGoblin() {
         if (this.currentPosition !== null && this.cells[this.currentPosition]) {
             const cell = this.cells[this.currentPosition];
-            if (cell.contains(this.goblin.getElement())) {
-                cell.remove(this.goblin.getElement());
+            const goblinElement = this.goblin.getElement();
+            if (cell.contains(goblinElement)) {
+                goblinElement.remove();
             }
         }
         this.currentPosition = null;
     }
 
-    getRandomPosition() {
+    getRandomPosition(avoidPosition = null) {
+        if (this.cells.length === 0) return 0;
+        if (this.cells.length === 1) return 0;
+
         let newPosition;
+        let attempts = 0;
+        const maxAttempts = 100;
+
         do {
             newPosition = Math.floor(Math.random() * this.cells.length);
-        } while (newPosition === this.currentPosition && this.cells.length > 1);
+            attempts++;
+        } while (newPosition === avoidPosition && attempts < maxAttempts);
+
         return newPosition;
     }
 
@@ -69,6 +78,10 @@ class Board {
     reset() {
         this.removeGoblin();
         this.currentPosition = null;
+    }
+
+    getCell(position) {
+        return this.cells[position] || null;
     }
 }
 

@@ -4,7 +4,7 @@ const Score = require('./Score');
 
 const BOARD_SIZE = 4;
 const GOBLIN_VISIBLE_TIME = 1000;
-const GOBLIN_APPEAR_DELAY = 1000;
+const GOBLIN_APPEAR_DELAY = 500;
 const MAX_MISSES = 5;
 
 class Game {
@@ -15,6 +15,7 @@ class Game {
         this.timeoutId = null;
         this.isRunning = false;
         this.isGoblinVisible = false;
+        this.lastPosition = null;
         this.statusElement = null;
     }
 
@@ -31,6 +32,7 @@ class Game {
         if (this.isRunning) return;
         this.isRunning = true;
         this.clearGameStatus();
+        this.lastPosition = null;
         this.scheduleGoblinAppearance();
     }
 
@@ -50,11 +52,14 @@ class Game {
             return;
         }
 
-        const newPosition = this.board.getRandomPosition();
+        // Получаем новую позицию, избегая предыдущей
+        const newPosition = this.board.getRandomPosition(this.lastPosition);
+        this.lastPosition = newPosition;
+
         this.board.placeGoblin(newPosition);
         this.isGoblinVisible = true;
 
-        // Гоблин исчезнет через GOBLIN_VISIBLE_TIME (без засчета промаха)
+        // Гоблин исчезнет через GOBLIN_VISIBLE_TIME
         this.timeoutId = setTimeout(() => {
             if (this.isGoblinVisible && this.isRunning && !this.score.isGameOver()) {
                 this.board.removeGoblin();
@@ -66,25 +71,42 @@ class Game {
 
     onCellClick(position) {
         if (!this.isRunning || this.score.isGameOver()) return;
-
         if (!this.isGoblinVisible) return;
 
+        // Отменяем таймер исчезновения
         if (this.timeoutId) {
             clearTimeout(this.timeoutId);
+            this.timeoutId = null;
         }
 
         if (position === this.board.currentPosition) {
+            // Попадание!
             this.score.incrementScore();
             this.board.removeGoblin();
             this.isGoblinVisible = false;
+            this.lastPosition = position;
             this.updateScore();
 
             if (this.score.isGameOver()) {
                 this.endGame();
             } else {
-                this.showGoblin();
+                // Показываем гоблина в новой позиции сразу
+                const newPosition = this.board.getRandomPosition(this.lastPosition);
+                this.lastPosition = newPosition;
+                this.board.placeGoblin(newPosition);
+                this.isGoblinVisible = true;
+
+                // Устанавливаем таймер для исчезновения
+                this.timeoutId = setTimeout(() => {
+                    if (this.isGoblinVisible && this.isRunning && !this.score.isGameOver()) {
+                        this.board.removeGoblin();
+                        this.isGoblinVisible = false;
+                        this.scheduleGoblinAppearance();
+                    }
+                }, GOBLIN_VISIBLE_TIME);
             }
         } else {
+            // Промах! Клик по пустой ячейке
             this.score.incrementMiss();
             this.board.removeGoblin();
             this.isGoblinVisible = false;
@@ -111,6 +133,7 @@ class Game {
         this.isGoblinVisible = false;
         if (this.timeoutId) {
             clearTimeout(this.timeoutId);
+            this.timeoutId = null;
         }
         this.board.removeGoblin();
         this.showGameStatus();
@@ -142,8 +165,10 @@ class Game {
     restart() {
         this.isRunning = false;
         this.isGoblinVisible = false;
+        this.lastPosition = null;
         if (this.timeoutId) {
             clearTimeout(this.timeoutId);
+            this.timeoutId = null;
         }
         this.board.reset();
         this.score.reset();
