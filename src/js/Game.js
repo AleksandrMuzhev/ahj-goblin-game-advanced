@@ -62,9 +62,17 @@ class Game {
         // Гоблин исчезнет через GOBLIN_VISIBLE_TIME
         this.timeoutId = setTimeout(() => {
             if (this.isGoblinVisible && this.isRunning && !this.score.isGameOver()) {
+                this.score.incrementMiss();
+                
                 this.board.removeGoblin();
                 this.isGoblinVisible = false;
-                this.scheduleGoblinAppearance();
+                this.updateScore();
+
+                if (this.score.isGameOver()) {
+                    this.endGame();
+                } else {
+                    this.scheduleGoblinAppearance();
+                }
             }
         }, GOBLIN_VISIBLE_TIME);
     }
@@ -99,9 +107,17 @@ class Game {
                 // Устанавливаем таймер для исчезновения
                 this.timeoutId = setTimeout(() => {
                     if (this.isGoblinVisible && this.isRunning && !this.score.isGameOver()) {
+                        this.score.incrementMiss();
+
                         this.board.removeGoblin();
                         this.isGoblinVisible = false;
-                        this.scheduleGoblinAppearance();
+                        this.updateScore();
+
+                        if (this.score.isGameOver()) {
+                            this.endGame();
+                        } else {
+                            this.scheduleGoblinAppearance();
+                        }
                     }
                 }, GOBLIN_VISIBLE_TIME);
             }
